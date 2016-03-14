@@ -6,33 +6,50 @@ TODO: Delete this and the text above, and describe your gem
 
 ## Installation
 
-Add this line to your application's Gemfile:
+### In your Gemfile: 
 
 ```ruby
 gem 'reevoo_logger'
 ```
+    
+### Init logger:
+    
+    module TestApp
+      def self.logger
+        @logger ||= ReevooLogger.new('app_name', Rack::Directory.new("").root)
+      end
+    end
+    
+You can specify the log output
 
-And then execute:
+    @logger ||= ReevooLogger.new('app_name', Rack::Directory.new("").root, STDOUT)
+  
 
-    $ bundle
+### Setup Grape request/exception logging
 
-Or install it yourself as:
+Add to Gemfile
 
-    $ gem install reevoo_logger
+    gem 'grape_logging'
+    
+Setup in Grape::API class
+     
+    module TestApp
+      class API < Grape::API
+        logger TestApp.logger
+        use GrapeLogging::Middleware::RequestLogger, logger: TestApp.logger
+        
+        rescue_from TestApp::NotFound do |err|
+          # Tag your exception 
+          API.logger.info(exception: err, tags: "rescued_exception", status: 404)
+          error_response(message: "Not found", status: 404)
+        end
 
-## Usage
-
-TODO: Write usage instructions here
-
-## Development
-
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
-
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
-
-## Contributing
-
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/reevoo_logger. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+        rescue_from :all do |e|
+          API.logger.error(e)
+          error_response(message: e.message, status: 500)
+        end
+      end
+    end
 
 
 ## License
