@@ -4,6 +4,7 @@ require 'logger'
 module ReevooLogger
   class Logger < ::Logger
 
+    attr_reader :statsd
     def initialize(statsd, device)
       super(device)
       @statsd = statsd
