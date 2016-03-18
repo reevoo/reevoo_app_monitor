@@ -1,33 +1,43 @@
 require "reevoo_logger/version"
 require "reevoo_logger/logger"
+require 'logstasher'
+require 'statsd'
 
-class ReevooLogger
+module ReevooLogger
 
-  attr_reader :statsd
-
-  def initialize(app_name:, root_dir: nil, device: nil, level: Logger::INFO, statsd_conf: {})
-    if root_dir && !device
-      device = File.join(root_dir, 'log', 'logstasher.log')
-      FileUtils.touch(device)
-    end
+  def self.new_logger(app_name:, root_dir: nil, device: nil, level: nil, statsd_conf: {})
     formatter = LogStasher::LogFormatter.new(app_name, root_dir)
+    device = set_device(device, root_dir)
+    level ||= ::Logger::INFO
 
-    @statsd = Statsd.new(
+    statsd = ::Statsd.new(
       statsd_conf.fetch(:host, 'localhost'),
       statsd_conf.fetch(:port, 8125),
       namespace: app_name,
     )
 
-    initialize_logger(device || STDOUT, level, formatter)
+    initialize_logger(statsd, device, level, formatter)
   end
 
-  private
+  class << self
 
-  def initialize_logger(device = STDOUT, level = ::Logger::INFO, formatter = nil)
-    Logger.new(@statsd, device).tap do |new_logger|
-      new_logger.level = level
-      new_logger.formatter = formatter if formatter
+    def set_device(device, root_dir)
+      return device if device
+      return STDOUT unless root_dir
+
+      log_dir = File.join(root_dir, 'log')
+      Dir.mkdir(log_dir) unless File.exists?(log_dir)
+      device = File.join(log_dir, 'logstasher.log')
+      FileUtils.touch(device)
+      device
     end
-  end
 
+    def initialize_logger(statsd, device, level, formatter = nil)
+      Logger.new(statsd, device).tap do |new_logger|
+        new_logger.level     = level
+        new_logger.formatter = formatter if formatter
+      end
+    end
+
+  end
 end
