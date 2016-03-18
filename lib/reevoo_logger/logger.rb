@@ -20,7 +20,9 @@ module ReevooLogger
       if message
         # Remove all non LATIN1 characters
         message_key = message.to_s.downcase.gsub(/[^a-zA-Z0-9]/, '_')
-        key < '.' + message_key
+
+        # Add only first 100 characters
+        key < '.' + message_key[0...100]
       end
 
       @statsd.increment(key)
