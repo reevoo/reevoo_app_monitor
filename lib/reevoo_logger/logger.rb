@@ -15,14 +15,14 @@ module ReevooLogger
       return true unless progname.is_a?(Exception)
 
       # StatsD
-      key ='exception.' + message.class.to_s.underscore
+      key ='exception.' + progname.class.to_s.underscore
 
       if message
         # Remove all non LATIN1 characters
         message_key = message.to_s.downcase.gsub(/[^a-zA-Z0-9]/, '_')
 
         # Use only first 100 characters
-        key < '.' + message_key[0...100]
+        key << '.' + message_key[0...100]
       end
 
       @statsd.increment(key)
