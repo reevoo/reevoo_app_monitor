@@ -62,6 +62,69 @@ describe ReevooLogger do
       expect(subject.statsd).to be_a(Statsd)
     end
 
+    class TestError < StandardError
+    end
+
+    let(:exception_message) { 'Exception message' }
+    let(:exception) do
+      e = TestError.new(exception_message)
+      e.set_backtrace(backtrace)
+      e
+    end
+    let(:backtrace) do
+      [
+        '/foo/bar.rb',
+        '/my/root/releases/12345/foo/broken.rb',
+        '/bar/foo.rb',
+      ]
+    end
+
+    describe '#error' do
+      it 'tracks error in statsd for exception' do
+        expect_any_instance_of(Statsd).to receive(:increment).with('exception.test_error')
+        subject.error(exception)
+      end
+
+      it 'tracks error in statsd for key exception' do
+        expect_any_instance_of(Statsd).to receive(:increment).with('exception.test_error')
+        # require 'pry'; binding.pry
+
+        subject.error({exception: exception})
+      end
+
+      it 'tracks error in statsd for exception and message' do
+        expect_any_instance_of(Statsd).to receive(:increment).with('exception.test_error.foo_bar')
+        subject.error(message: 'Foo Bar', exception: exception)
+      end
+    end
+
+    describe '#info' do
+      it 'does not track an event in statsd if an exception provided' do
+        expect_any_instance_of(Statsd).to_not receive(:increment)
+
+        subject.info(exception)
+      end
+
+      it 'does not track an event in statsd if string provided' do
+        expect_any_instance_of(Statsd).to_not receive(:increment)
+
+        subject.info('exception')
+      end
+    end
+
+    describe '#warn' do
+      it 'does not track an event in statsd if an exception provided' do
+        expect_any_instance_of(Statsd).to_not receive(:increment)
+
+        subject.warn(exception)
+      end
+
+      it 'does not track an event in statsd if string provided' do
+        expect_any_instance_of(Statsd).to_not receive(:increment)
+
+        subject.warn('exception')
+      end
+    end
 
   end
 end
