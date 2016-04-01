@@ -5,50 +5,48 @@ describe ReevooLogger::Logger do
   class TestError < StandardError
   end
 
-  let(:statsd) { Statsd.new}
+  def test_exception(msg = nil)
+    TestError.new(msg).tap do |err|
+      err.set_backtrace([
+        '/foo/bar.rb',
+        '/my/root/releases/12345/foo/broken.rb',
+        '/bar/foo.rb',
+      ])
+    end
+  end
 
-  let(:exception_message) { 'Exception message' }
-  let(:exception) do
-    e = TestError.new(exception_message)
-    e.set_backtrace(backtrace)
-    e
-  end
-  let(:backtrace) do
-    [
-      '/foo/bar.rb',
-      '/my/root/releases/12345/foo/broken.rb',
-      '/bar/foo.rb',
-    ]
-  end
+  let(:statsd) { Statsd.new }
 
   subject { described_class.new(statsd, nil) }
 
   describe '#statsd' do
     it 'provides an instance of statsd' do
-      expect(described_class.new(statsd, nil).statsd).to be_a(Statsd)
+      expect(subject.statsd).to be_a(Statsd)
     end
   end
 
   describe '#add' do
     it 'tracks error in statsd' do
-      expect(statsd).to receive(:increment).with('exception.test_error')
-      subject.add(Logger::INFO, nil, exception)
+      expect(statsd).to receive(:increment).with('exception.test_error', tags: ['severity:debug'])
+      subject.add(Logger::DEBUG, nil, test_exception)
     end
 
     context 'with message' do
       it 'append a message' do
-        expect(statsd).to receive(:increment).with('exception.test_error.foo_bar')
-        subject.add(Logger::INFO, 'Foo Bar', exception)
+        expect(statsd).to receive(:increment).with('exception.test_error.foo_bar', tags: ['severity:info'])
+        subject.add(Logger::INFO, nil, test_exception('Foo Bar'))
       end
 
       it 'replaces non-ASCII characters with _' do
-        expect(statsd).to receive(:increment).with('exception.test_error.foo____bar')
-        subject.add(Logger::INFO, 'Foo фф Bar', exception)
+        expect(statsd).to receive(:increment).with('exception.test_error.foo____bar', tags: ['severity:error'])
+        subject.add(Logger::ERROR, nil, test_exception('Foo фф Bar'))
       end
 
       it 'replaces special characters with _' do
-        expect(statsd).to receive(:increment).with('exception.test_error.foo____________________________bar')
-        subject.add(Logger::INFO, %q(Foo.,/?\][-=_+@£'";:><~`±§$%^&*Bar), exception)
+        expect(statsd).to receive(:increment).with(
+          'exception.test_error.foo____________________________bar', tags: ['severity:warn']
+        )
+        subject.add(Logger::WARN, nil, test_exception(%q(Foo.,/?\][-=_+@£'";:><~`±§$%^&*Bar)))
       end
 
       it 'limits the message' do
@@ -60,10 +58,33 @@ describe ReevooLogger::Logger do
           expected_message.gsub!('exception.test_error.', '')
           expect(expected_message.length).to eq(100)
         end
-        subject.add(Logger::INFO, message, exception)
+        subject.add(Logger::INFO, nil, test_exception(message))
       end
 
     end
   end
 
+
+  %w(debug info warn error fatal).each do |method_name|
+    describe "##{method_name}" do
+      let(:severity_const) { "Logger::#{method_name.upcase}".constantize }
+
+      it 'calls #add and passes string' do
+        expect(subject).to receive(:add).with(severity_const, nil, 'foo bar')
+        subject.send(method_name, 'foo bar')
+      end
+
+      it 'calls #add and passes exception' do
+        err = test_exception
+        expect(subject).to receive(:add).with(severity_const, nil, err)
+        subject.send(method_name, err)
+      end
+
+      it 'calls #add and passes hash' do
+        msg = { exception: test_exception }
+        expect(subject).to receive(:add).with(severity_const, nil, msg)
+        subject.send(method_name, msg)
+      end
+    end
+  end
 end
