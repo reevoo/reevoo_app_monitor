@@ -17,7 +17,7 @@ describe ReevooLogger::Logger do
 
   let(:statsd) { Statsd.new }
 
-  subject { described_class.new(statsd, nil) }
+  subject { described_class.new(nil, statsd: statsd) }
 
   describe '#statsd' do
     it 'provides an instance of statsd' do
