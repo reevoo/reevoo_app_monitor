@@ -114,21 +114,27 @@ describe ReevooAppMonitor::Logger do
 
       it 'tracks exceptions inside hash' do
         err = test_exception
-        expect(raven).to receive(:capture_exception).with(err, tags: { severity: 'debug' })
-        subject.add(Logger::DEBUG, nil, { exception: err })
+        expect(raven).to receive(:capture_exception).with(err, tags: { severity: 'error' })
+        subject.add(Logger::ERROR, nil, { exception: err })
       end
 
       it 'passes the tags from hash' do
         err = test_exception
-        expect(raven).to receive(:capture_exception).with(err, tags: { severity: 'debug' },
+        expect(raven).to receive(:capture_exception).with(err, tags: { severity: 'fatal' },
                                                                extra: { extra_tags: ['foo', 'bar'] })
-        subject.add(Logger::DEBUG, nil, { exception: err, tags: ['foo', 'bar'] })
+        subject.add(Logger::FATAL, nil, { exception: err, tags: ['foo', 'bar'] })
       end
 
       it 'omits all non exceptions' do
         expect(raven).not_to receive(:capture_exception)
-        subject.add(Logger::INFO, nil, 'foo bar')
+        subject.add(Logger::ERROR, nil, 'foo bar')
         subject.add(Logger::ERROR, nil, { foo: 'bar' })
+      end
+
+      it 'omits all exceptions bellow the ERROR severity' do
+        expect(raven).not_to receive(:capture_exception)
+        subject.add(Logger::INFO, nil, test_exception)
+        subject.add(Logger::WARN, nil, { exception: test_exception })
       end
     end
   end

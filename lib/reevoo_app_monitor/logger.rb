@@ -46,7 +46,7 @@ class ReevooAppMonitor
     end
 
     def track_exception_to_raven(severity, exception, tags)
-      return if tags.include?("rescued_exception")
+      return if severity < ERROR
       options = { tags: { severity: severity_text(severity) } }
       options[:extra] = { extra_tags: tags } unless tags.empty?
       @raven.capture_exception(exception, options)
