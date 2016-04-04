@@ -62,6 +62,11 @@ describe ReevooLogger::Logger do
         subject.add(Logger::DEBUG, nil, { exception: test_exception })
       end
 
+      it 'merges the tags from hash' do
+        expect(statsd).to receive(:increment).with('exception.test_error', tags: ['severity:debug', 'foo', 'bar'])
+        subject.add(Logger::DEBUG, nil, { exception: test_exception, tags: ['foo', 'bar'] })
+      end
+
       it 'omits all non exceptions' do
         expect(statsd).not_to receive(:increment)
         subject.add(Logger::DEBUG, nil, 'foo bar')
@@ -123,6 +128,13 @@ describe ReevooLogger::Logger do
         err = test_exception
         expect(raven).to receive(:capture_exception).with(err, tags: { severity: 'debug' })
         subject.add(Logger::DEBUG, nil, { exception: err })
+      end
+
+      it 'passes the tags from hash' do
+        err = test_exception
+        expect(raven).to receive(:capture_exception).with(err, tags: { severity: 'debug' },
+                                                               extra: { extra_tags: ['foo', 'bar'] })
+        subject.add(Logger::DEBUG, nil, { exception: err, tags: ['foo', 'bar'] })
       end
 
       it 'omits all non exceptions' do
