@@ -7,17 +7,21 @@ require "raven/base"
 class ReevooAppMonitor
   DEFAULT_INTEGRATIONS = [:logstasher, :statsd, :raven]
 
-  attr_reader :logger, :statsd, :raven
+  attr_reader :logger, :stats
 
   def initialize(app_name:, root_dir: nil, device: nil, level: ::Logger::INFO,
       env: ENV["RACK_ENV"], integrations: DEFAULT_INTEGRATIONS, statsd_conf: {}, raven_conf: {})
 
-    @statsd = init_statsd(statsd_conf, app_name, env)              if integrations.include?(:statsd)
-    @raven = init_raven(raven_conf, app_name, env)                 if integrations.include?(:raven)
-    formatter = LogStasher::LogFormatter.new(app_name, root_dir)   if integrations.include?(:logstasher)
+    @stats = init_statsd(statsd_conf, app_name, env)              if integrations.include?(:statsd)
+    raven = init_raven(raven_conf, app_name, env)                 if integrations.include?(:raven)
+    formatter = LogStasher::LogFormatter.new(app_name, root_dir)  if integrations.include?(:logstasher)
 
     device ||= get_device(root_dir)
-    @logger = init_logger(device, level, formatter, statsd: statsd, raven: raven)
+    @logger = init_logger(device, level, formatter, statsd: @stats, raven: raven)
+  end
+
+  def nil_service
+    @nil_service ||= ReevooAppMonitor::NilService.new
   end
 
   private
@@ -51,7 +55,8 @@ class ReevooAppMonitor
   def init_raven(raven_conf, app_name, env)
     Raven.configure do |config|
       config.tags = { env: env }
-      raven_conf.each_pair { |key, value| config.send(key, value) }
+      config.silence_ready = true
+      raven_conf.each_pair { |key, value| config.send("#{key}=", value) }
     end
     Raven
   end

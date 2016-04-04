@@ -55,15 +55,12 @@ describe ReevooAppMonitor do
     end
   end
 
-  describe '#statsd' do
-    it 'provides an instance of statsd' do
-      expect(subject.statsd).to be_a(Statsd)
-    end
-  end
-
-  describe '#raven' do
-    it 'provides an instance of raven' do
-      expect(subject.raven).to eq(Raven)
+  describe '#stats' do
+    it 'provides an instance with methods increment, histogram, gauge, time' do
+      expect(subject.stats.respond_to?(:increment)).to eq(true)
+      expect(subject.stats.respond_to?(:histogram)).to eq(true)
+      expect(subject.stats.respond_to?(:gauge)).to eq(true)
+      expect(subject.stats.respond_to?(:time)).to eq(true)
     end
   end
 end

@@ -17,27 +17,27 @@ gem 'reevoo_app_monitor'
 
 ```ruby
 module TestApp
+  def self.production?
+    ENV["RACK_ENV"] == "production"
+  end
+
   def self.app_monitor
     @app_monitor ||= ReevooAppMonitor.new(
       app_name: "foo_app",
       root_dir: Rack::Directory.new("").root
       device: STDOUT,
       raven_conf: {
-        dns: "https://00c73aa8f93f4hbwjehb4r20af10afb@app.getsentry.com/502146"
+        dsn: "https://00c73aa8f93f4hbwjehb4r20af10afb@app.getsentry.com/502146"
       }
-    )
+    ) if production?
   end
 
   def self.logger
-    app_monitor.logger
+    production? ? app_monitor.logger : Logger.new(STDOUT)
   end
 
-  def self.statsd
-    app_monitor.statsd
-  end
-
-  def self.raven
-    app_monitor.raven
+  def self.stats
+    production? ? app_monitor.stats : ReevooAppMonitor.nil_service
   end
 end
 ```
@@ -51,7 +51,7 @@ ReevooAppMonitor.new(
   device: STDOUT, # default is file log in log/logstasher.log
   integrations: [:logstasher, :statsd, :raven], # you can turn off individual integrations
   raven_conf: {
-    dns: "https://00c73aa8f93f4hbwjehb4r20af10afb@app.getsentry.com/502146" # public sentry DNS
+    dsn: "https://00c73aa8f93f4hbwjehb4r20af10afb@app.getsentry.com/502146"
   },
   statsd_conf: { # in most cases you should be fine with default localhost:8125
     host: "my-host",
@@ -92,16 +92,17 @@ end
 ```
 
 
-### Using statsd directly
+### Track statsd metrics directly
+
+You can call all methods supported by https://github.com/DataDog/dogstatsd-ruby
 
 ```ruby
-  TestApp.statsd.increment('foo.bar')
-```
-
-### Using raven directly
-
-```ruby
-  TestApp.raven.capture_exception(exception)
+  TestApp.stats.increment('foo.bar')
+  TestApp.stats.gauge('foo.online', 123)
+  TestApp.stats.histogram('foo.upload.size', 1234)
+  TestApp.stats.time('page.render') do
+    render_page('home.html')
+  end
 ```
 
 
