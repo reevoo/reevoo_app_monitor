@@ -9,14 +9,12 @@ describe ReevooLogger do
     let(:app_name) { 'foo' }
     let(:root_dir) { nil }
     let(:device) { nil }
-    let(:level) { nil }
     let(:statsd_conf) { {} }
     let(:options) do
       {
         app_name:    app_name,
         root_dir:    root_dir,
         device:      device,
-        level:       level,
         statsd_conf: statsd_conf,
       }
     end

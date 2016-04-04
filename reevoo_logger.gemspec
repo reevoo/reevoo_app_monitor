@@ -21,6 +21,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "rv-logstasher", "~> 1.3"
   spec.add_dependency "dogstatsd-ruby", "~> 1.6"
+  spec.add_dependency "sentry-raven", "~> 0.15.6"
   spec.add_dependency "activesupport"
 
   spec.add_development_dependency "bundler", "~> 1.11"
