@@ -1,10 +1,8 @@
 require 'active_support/core_ext/string/inflections'
 require 'logger'
 
-module ReevooLogger
+class ReevooAppMonitor
   class Logger < ::Logger
-
-    attr_reader :statsd, :raven
 
     def initialize(device, statsd: nil, raven: nil)
       super(device)
@@ -19,8 +17,8 @@ module ReevooLogger
       # it passes the message to #add as a progname and message argument is always nil. See the test for this class.
       exception = extract_exception(progname)
       tags = extract_tags(progname)
-      track_exception_to_statsd(severity, exception, tags) if exception && statsd
-      track_exception_to_raven(severity, exception, tags) if exception && raven
+      track_exception_to_statsd(severity, exception, tags) if exception && @statsd
+      track_exception_to_raven(severity, exception, tags) if exception && @raven
     end
 
     private
@@ -44,14 +42,14 @@ module ReevooLogger
         key_parts << exception.message.downcase.gsub(/[^a-zA-Z0-9]/, '_')[0...100]
       end
 
-      statsd.increment(key_parts.join('.'), tags: ["severity:#{severity_text(severity)}"] + tags)
+      @statsd.increment(key_parts.join('.'), tags: ["severity:#{severity_text(severity)}"] + tags)
     end
 
     def track_exception_to_raven(severity, exception, tags)
       return if tags.include?("rescued_exception")
       options = { tags: { severity: severity_text(severity) } }
       options[:extra] = { extra_tags: tags } unless tags.empty?
-      raven.capture_exception(exception, options)
+      @raven.capture_exception(exception, options)
     end
 
     def severity_text(severity)

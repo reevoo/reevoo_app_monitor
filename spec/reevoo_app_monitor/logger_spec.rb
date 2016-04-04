@@ -1,7 +1,7 @@
 require 'spec_helper'
 require 'statsd'
 
-describe ReevooLogger::Logger do
+describe ReevooAppMonitor::Logger do
   class TestError < StandardError
   end
 
@@ -44,12 +44,6 @@ describe ReevooLogger::Logger do
   context 'statsd integration' do
     let(:statsd) { Statsd.new }
     subject { described_class.new(nil, statsd: statsd) }
-
-    describe '#statsd' do
-      it 'provides an instance of statsd' do
-        expect(subject.statsd).to be_a(Statsd)
-      end
-    end
 
     describe '#add' do
       it 'tracks exceptions' do
@@ -110,12 +104,6 @@ describe ReevooLogger::Logger do
   context 'raven integration' do
     let(:raven) { Raven }
     subject { described_class.new(nil, raven: raven) }
-
-    describe '#raven' do
-      it 'provides an instance of raven' do
-        expect(subject.raven).to eq(Raven)
-      end
-    end
 
     describe '#add' do
       it 'tracks exceptions' do

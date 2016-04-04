@@ -1,36 +1,63 @@
-# ReevooLogger
+# ReevooAppMonitor
 
-ReevooLogger consolidates logstasher, statsd and sentry raven into a single library with one setup. It automatically
-tracks all log messages into logstash, exceptions into sentry and updates exceptions stats in statsd. It also allow you
-to call methods directly on instances of statsd and raven if needed.
+ReevooAppMonitor consolidates logstasher, statsd and sentry raven into a single library with one setup.
+It's designed for Rack/Grape apps. It automatically tracks all log messages into logstash, exceptions into
+sentry and updates exceptions stats in statsd. It also allow you to call methods directly on instances of statsd
+and raven if needed.
 
 ## Installation
 
 ### In your Gemfile:
 
 ```ruby
-gem 'reevoo_logger'
+gem 'reevoo_app_monitor'
 ```
 
-### Init logger:
+### Init app monitor:
 
 ```ruby
 module TestApp
-  def self.logger
-    @logger ||= ReevooLogger.new(
+  def self.app_monitor
+    @app_monitor ||= ReevooAppMonitor.new(
       app_name: "foo_app",
       root_dir: Rack::Directory.new("").root
-      device: STDOUT, # default is file log in log/logstasher.log
+      device: STDOUT,
       raven_conf: {
-        dns: "https://00c73aa8f93f4hbwjehb4r20af10afb@app.getsentry.com/502146" # public sentry DNS
-      },
-      statsd_conf: { # in most cases you should be fine with default localhost:8125
-        host: "my-host",
-        port: 1234
+        dns: "https://00c73aa8f93f4hbwjehb4r20af10afb@app.getsentry.com/502146"
       }
     )
   end
+
+  def self.logger
+    app_monitor.logger
+  end
+
+  def self.statsd
+    app_monitor.statsd
+  end
+
+  def self.raven
+    app_monitor.raven
+  end
 end
+```
+
+All constructor arguments:
+
+```ruby
+ReevooAppMonitor.new(
+  app_name: "foo_app",
+  root_dir: Rack::Directory.new("").root
+  device: STDOUT, # default is file log in log/logstasher.log
+  integrations: [:logstasher, :statsd, :raven], # you can turn off individual integrations
+  raven_conf: {
+    dns: "https://00c73aa8f93f4hbwjehb4r20af10afb@app.getsentry.com/502146" # public sentry DNS
+  },
+  statsd_conf: { # in most cases you should be fine with default localhost:8125
+    host: "my-host",
+    port: 1234
+  }
+)
 ```
 
 
@@ -68,13 +95,13 @@ end
 ### Using statsd directly
 
 ```ruby
-  TestApp.logger.statsd.increment('foo.bar')
+  TestApp.statsd.increment('foo.bar')
 ```
 
 ### Using raven directly
 
 ```ruby
-  TestApp.logger.raven.capture_exception(exception)
+  TestApp.raven.capture_exception(exception)
 ```
 
 
