@@ -39,11 +39,15 @@ module ReevooLogger
         key_parts << exception.message.downcase.gsub(/[^a-zA-Z0-9]/, '_')[0...100]
       end
 
-      statsd.increment(key_parts.join('.'), tags: ["severity:#{format_severity(severity).downcase}"])
+      statsd.increment(key_parts.join('.'), tags: ["severity:#{severity_text(severity)}"])
     end
 
     def track_exception_to_raven(severity, exception)
-      raven.capture_exception(exception, tags: { severity: severity })
+      raven.capture_exception(exception, tags: { severity: severity_text(severity) })
+    end
+
+    def severity_text(severity)
+      format_severity(severity).downcase
     end
 
   end

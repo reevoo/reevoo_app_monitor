@@ -10,12 +10,11 @@ module ReevooLogger
   def self.new_logger(app_name:, root_dir: nil, device: nil, level: ::Logger::INFO,
       env: ENV["RACK_ENV"], integrations: DEFAULT_INTEGRATIONS, statsd_conf: {}, raven_conf: {})
 
-    device ||= get_device(root_dir)
-
     formatter = LogStasher::LogFormatter.new(app_name, root_dir)  if integrations.include?(:logstasher)
     statsd = init_statsd(statsd_conf, app_name, env)              if integrations.include?(:statsd)
     raven = init_raven(raven_conf, app_name, env)                 if integrations.include?(:raven)
 
+    device ||= get_device(root_dir)
     init_logger(device, level, formatter, statsd: statsd, raven: raven)
   end
 
