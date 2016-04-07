@@ -24,12 +24,16 @@ module TestApp
   def self.app_monitor
     @app_monitor ||= ReevooAppMonitor.new(
       app_name: "foo_app",
-      root_dir: Rack::Directory.new("").root
+      root_dir: Rack::Directory.new("").root,
       device: STDOUT,
       raven_conf: {
-        dsn: "https://00c73aa8f93f4hbwjehb4r20af10afb@app.getsentry.com/502146"
+        dsn: "https://your_get_setnry_key@app.getsentry.com/application_id"
+      },
+      statsd_conf: {
+        host: ENV.fetch('STATSD_HOST'),
+        port: ENV.fetch('STATSD_PORT'),
       }
-    ) if production?
+    )
   end
 
   def self.logger
@@ -37,7 +41,7 @@ module TestApp
   end
 
   def self.stats
-    production? ? app_monitor.stats : ReevooAppMonitor.nil_service
+    production? ? app_monitor.stats : app_monitor.nil_service
   end
 end
 ```
@@ -51,7 +55,7 @@ ReevooAppMonitor.new(
   device: STDOUT, # default is file log in log/logstasher.log
   integrations: [:logstasher, :statsd, :raven], # you can turn off individual integrations
   raven_conf: {
-    dsn: "https://00c73aa8f93f4hbwjehb4r20af10afb@app.getsentry.com/502146"
+    dsn: "https://your_get_setnry_key@app.getsentry.com/application_id"
   },
   statsd_conf: { # in most cases you should be fine with default localhost:8125
     host: "my-host",

@@ -1,5 +1,6 @@
 require "reevoo_app_monitor/version"
 require "reevoo_app_monitor/logger"
+require "reevoo_app_monitor/nil_service"
 require "logstasher"
 require "statsd"
 require "raven/base"
