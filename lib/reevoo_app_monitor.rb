@@ -58,6 +58,19 @@ class ReevooAppMonitor
       config.tags = { env: env }
       config.silence_ready = true
       raven_conf.each_pair { |key, value| config.send("#{key}=", value) }
+
+      # TODO: Move to background job
+      #
+      # class SentryJob < ActiveRecord::Job
+      #   def perform(event)
+      #     Raven.send_event(event)
+      #   end
+      # end
+      #
+      #
+      # config.async = lambda do |event|
+      #   SentryJob.perform_later(event.to_hash)
+      # end
     end
     Raven
   end
